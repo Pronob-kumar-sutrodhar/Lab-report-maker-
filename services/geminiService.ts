@@ -9,44 +9,36 @@ const processLabReport = async (data: LabData): Promise<string> => {
 
   const ai = new GoogleGenAI({ apiKey });
 
-  // Construct the dynamic part of the prompt for problems
-  const problemsPrompt = data.problems.map((prob, index) => `
----
-## *Problem ${index + 1} :*
-<div align="justify">
-${prob.description || "N/A"}
-</div>
+  // Serialize inputs for the prompt
+  const problemsInput = data.problems.map((p, i) => `
+[PROBLEM ${i + 1}]
+RAW_DESCRIPTION:
+${p.description || "No description provided."}
 
-## *Code :*
-\`\`\`C
-${prob.code}
-\`\`\`
-
-## *Output :* 
-* [GENERATE A SHORT 1-SENTENCE DESCRIPTION OF WHAT THE OUTPUT SHOWS HERE] *
-<p align="center">
-<img alt="ID_lab${data.labNumber}_prob_${index + 1}" src="">
-</p>
-
-## *Discussion :*
-<div align="justify">
-[Write a very short academic discussion (2-3 lines only) explaining the core concept used in this specific code (e.g., dynamic memory, polymorphism, pointers).]
-</div>
-`).join('\n');
+RAW_CODE:
+${p.code}
+`).join('\n\n');
 
   const prompt = `
 Role:
-You are a C++ lab report assistant. Your task is to format the provided C++ lab problems exactly according to the strict template below.
+You are an academic programming assistant. Generate a C++ lab report.
 
-RULES:
-1. ❌ Do NOT rename variables, functions, or classes.
-2. ❌ Do NOT refactor or simplify the code.
-3. ✅ Keep the provided code EXACTLY as is.
-4. ✅ STRICTLY follow the Markdown/HTML format provided below.
-5. ✅ The Discussion section must be SHORT (2-3 lines max).
-6. ✅ In the "Output" section, inside the '* *', write a brief description of the program's output.
+INPUT DATA:
+Lab Number: ${data.labNumber}
+Lab Title: ${data.labTitle}
+Codeforces Link: ${data.codeforcesLink || "(Codeforces submission link will be added later)"}
+Submission Date: ${new Date().toLocaleDateString()}
 
-Required Output Structure (Must Match Exactly):
+${problemsInput}
+
+INSTRUCTIONS:
+1. **Description**: Format the "RAW_DESCRIPTION" into a clear, academic problem statement. Preserve newlines, bullet points, and input/output specifications. Use bold text for labels like **Input:** or **Output:** if applicable.
+2. **Code**: Insert "RAW_CODE" exactly as provided. Do not modify.
+3. **Output Section**: Write a 1-sentence summary of the program's result inside the '* *'.
+4. **Discussion**: Write a concise (2-3 lines) academic discussion on the concepts used.
+5. **Structure**: Follow the REQUIRED FORMAT below exactly.
+
+REQUIRED FORMAT:
 
 ## *Lab No : ${data.labNumber}*
 
@@ -62,17 +54,29 @@ ${data.codeforcesLink || "(Codeforces submission link will be added later)"}
 
 ## *Submission Date : ${new Date().toLocaleDateString()}*
 
-${problemsPrompt}
+(Repeat the block below for each problem 1 to ${data.problems.length})
 
 ---
+## *Problem [N] :*
+<div align="justify">
+[FORMATTED PROBLEM DESCRIPTION]
+</div>
 
-Instructions for placeholders:
-- ID placeholder in image alt text: Use "ID_lab${data.labNumber}_prob_[ProblemNumber]".
-- The Output section description inside '* *' should be concise (e.g., "* The program displays the factorial of the input number. *").
+## *Code :*
+\`\`\`C
+[CODE]
+\`\`\`
 
-📥 Input Data Processing
-- Use the code blocks provided above exactly.
-- Ensure all HTML tags (div, p, img) are preserved exactly as written in the template.
+## *Output :* 
+* [SHORT OUTPUT SUMMARY] *
+<p align="center">
+<img alt="ID_lab${data.labNumber}_prob_[N]" src="">
+</p>
+
+## *Discussion :*
+<div align="justify">
+[ACADEMIC DISCUSSION]
+</div>
 `;
 
   try {
