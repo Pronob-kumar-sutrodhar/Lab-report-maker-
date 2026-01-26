@@ -50,7 +50,7 @@ Required Output Structure (Must Match Exactly):
 
 ## *Lab No : ${data.labNumber}*
 
-## *Lab Workout : ${data.labTitle}*
+## *Lab Title : ${data.labTitle}*
 
 ## *Code forces*
 <p align="center">

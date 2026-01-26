@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon } from 'lucide-react';
+import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp } from 'lucide-react';
 import { Button } from './components/Button';
 import { ResultViewer } from './components/ResultViewer';
 import { ProblemForm } from './components/ProblemForm';
+import { HelpModal } from './components/HelpModal';
 import { processLabReport } from './services/geminiService';
 import { LabData, GenerationState, Problem } from './types';
 
@@ -33,7 +34,17 @@ const App: React.FC = () => {
     return false;
   });
 
+  const [showHelp, setShowHelp] = useState(false);
+
   useEffect(() => {
+    // Check if user has visited before
+    const hasVisited = localStorage.getItem('hasVisited');
+    if (!hasVisited) {
+      setShowHelp(true);
+      localStorage.setItem('hasVisited', 'true');
+    }
+
+    // Theme initialization
     if (isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -105,6 +116,8 @@ const App: React.FC = () => {
 
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col overflow-hidden transition-colors duration-200">
+      <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 z-20 transition-colors">
         <div className="max-w-[1600px] mx-auto px-4 h-16 flex items-center justify-between">
@@ -115,6 +128,13 @@ const App: React.FC = () => {
             <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">C++ Lab Assistant</h1>
           </div>
           <div className="flex items-center gap-4">
+             <button 
+               onClick={() => setShowHelp(true)}
+               className="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+               title="Show Instructions"
+             >
+               <CircleHelp size={20} />
+             </button>
              <button 
                onClick={toggleTheme}
                className="p-2 text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white transition-colors"
