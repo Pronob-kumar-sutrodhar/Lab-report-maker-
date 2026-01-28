@@ -17,7 +17,7 @@ export const HelpModal: React.FC<HelpModalProps> = ({ isOpen, onClose }) => {
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
           <div>
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Welcome to C++ Assistant</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Welcome to Report Generator</h2>
             <p className="text-sm text-slate-500 dark:text-slate-400">Generate academic lab reports in seconds.</p>
           </div>
           <button 

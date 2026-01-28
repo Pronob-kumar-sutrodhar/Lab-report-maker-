@@ -126,7 +126,7 @@ const App: React.FC = () => {
             <div className="bg-blue-600 p-2 rounded-lg text-white">
               <BookOpen size={20} />
             </div>
-            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">C++ Lab Assistant</h1>
+            <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Report Generator</h1>
           </div>
           <div className="flex items-center gap-4">
              <button 
