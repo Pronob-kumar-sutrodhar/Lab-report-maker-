@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp } from 'lucide-react';
+import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp, User } from 'lucide-react';
 import { Button } from './components/Button';
 import { ResultViewer } from './components/ResultViewer';
 import { ProblemForm } from './components/ProblemForm';
@@ -9,6 +9,7 @@ import { LabData, GenerationState, Problem } from './types';
 
 const App: React.FC = () => {
   const [labInfo, setLabInfo] = useState({
+    studentId: '',
     labNumber: '',
     labTitle: '',
     codeforcesLink: ''
@@ -167,6 +168,25 @@ const App: React.FC = () => {
               {/* Lab Info Section */}
               <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">Lab Details</h2>
+                
+                <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-600 dark:text-slate-400 flex items-center gap-1">
+                      Student ID
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User size={14} className="text-slate-400" />
+                      </div>
+                      <input
+                        name="studentId"
+                        value={labInfo.studentId}
+                        onChange={handleInfoChange}
+                        placeholder="e.g. 21301548"
+                        className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
+                      />
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <label className="text-xs font-semibold text-slate-600 dark:text-slate-400">Lab Number</label>

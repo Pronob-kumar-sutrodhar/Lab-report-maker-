@@ -1,6 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 import { LabData } from "../types";
 
+const formatDate = (date: Date): string => {
+  const day = date.getDate();
+  const month = date.toLocaleString('default', { month: 'long' });
+  const year = date.getFullYear();
+
+  const getSuffix = (n: number) => {
+    if (n > 3 && n < 21) return 'th';
+    switch (n % 10) {
+      case 1:  return "st";
+      case 2:  return "nd";
+      case 3:  return "rd";
+      default: return "th";
+    }
+  };
+
+  return `${day} ${getSuffix(day)} ${month} ${year}`;
+};
+
 const processLabReport = async (data: LabData): Promise<string> => {
   const apiKey = process.env.API_KEY;
   if (!apiKey) {
@@ -19,6 +37,9 @@ RAW_CODE:
 ${p.code}
 `).join('\n\n');
 
+  const formattedDate = formatDate(new Date());
+  const idPlaceholder = data.studentId.trim() || "ID";
+
   const prompt = `
 Role:
 You are an academic programming assistant. Generate a C++ lab report.
@@ -27,7 +48,7 @@ INPUT DATA:
 Lab Number: ${data.labNumber}
 Lab Title: ${data.labTitle}
 Codeforces Link: ${data.codeforcesLink || "(Codeforces submission link will be added later)"}
-Submission Date: ${new Date().toLocaleDateString()}
+Submission Date: ${formattedDate}
 
 ${problemsInput}
 
@@ -52,7 +73,7 @@ REQUIRED FORMAT:
 ## Link to submission :
 ${data.codeforcesLink || "(Codeforces submission link will be added later)"}
 
-## *Submission Date : ${new Date().toLocaleDateString()}*
+## *Submission Date : ${formattedDate}*
 
 (Repeat the block below for each problem 1 to ${data.problems.length})
 
@@ -70,7 +91,7 @@ ${data.codeforcesLink || "(Codeforces submission link will be added later)"}
 ## *Output :* 
 * [SHORT OUTPUT SUMMARY] *
 <p align="center">
-<img alt="ID_lab${data.labNumber}_prob_[N]" src="">
+<img alt="${idPlaceholder}_lab${data.labNumber}_prob_[N]" src="">
 </p>
 
 ## *Discussion :*

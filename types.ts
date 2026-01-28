@@ -6,6 +6,7 @@ export interface Problem {
 }
 
 export interface LabData {
+  studentId: string;
   labNumber: string;
   labTitle: string; // The "Workout" title
   codeforcesLink: string;
