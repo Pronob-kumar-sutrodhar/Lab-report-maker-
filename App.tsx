@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp, User } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp, User, RotateCcw } from 'lucide-react';
 import { Button } from './components/Button';
 import { ResultViewer } from './components/ResultViewer';
 import { ProblemForm } from './components/ProblemForm';
@@ -27,6 +27,9 @@ const App: React.FC = () => {
     error: null
   });
 
+  // Used to force a complete re-render of the input section on reset
+  const [formKey, setFormKey] = useState(0);
+
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
       return document.documentElement.classList.contains('dark') || 
@@ -36,6 +39,7 @@ const App: React.FC = () => {
   });
 
   const [showHelp, setShowHelp] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Check if user has visited before
@@ -85,6 +89,39 @@ const App: React.FC = () => {
     setExpandedProblemId(prev => prev === id ? null : id);
   };
 
+  const handleReset = (e?: React.MouseEvent) => {
+    if (e) e.preventDefault();
+    if (window.confirm("Are you sure you want to reset all details? This will clear all your inputs and generated report.")) {
+      // Reset Lab Info
+      setLabInfo({
+        studentId: '',
+        labNumber: '',
+        labTitle: '',
+        codeforcesLink: ''
+      });
+      
+      // Reset Problems
+      const newId = String(Date.now());
+      setProblems([{ id: newId, title: '', description: '', code: '' }]);
+      setExpandedProblemId(newId);
+      
+      // Reset Generation Status
+      setGeneration({
+        status: 'idle',
+        result: null,
+        error: null
+      });
+
+      // Increment formKey to force DOM reconstruction of inputs
+      setFormKey(prev => prev + 1);
+
+      // Scroll sidebar to top
+      if (sidebarRef.current) {
+        sidebarRef.current.scrollTop = 0;
+      }
+    }
+  };
+
   const handleGenerate = async () => {
     // Basic Validation
     if (!labInfo.labNumber.trim() || !labInfo.labTitle.trim()) {
@@ -130,6 +167,13 @@ const App: React.FC = () => {
           </div>
           <div className="flex items-center gap-4">
              <button 
+               onClick={handleReset}
+               className="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+               title="Reset Details"
+             >
+               <RotateCcw size={20} />
+             </button>
+             <button 
                onClick={() => setShowHelp(true)}
                className="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
                title="Show Instructions"
@@ -163,8 +207,11 @@ const App: React.FC = () => {
         {/* Left Sidebar: Inputs */}
         <div className="w-full md:w-[450px] lg:w-[500px] border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex flex-col h-full z-10 shadow-lg md:shadow-none transition-colors">
           
-          <div className="flex-1 overflow-y-auto custom-scrollbar p-6">
-            <div className="space-y-6">
+          <div 
+            ref={sidebarRef}
+            className="flex-1 overflow-y-auto custom-scrollbar p-6"
+          >
+            <div key={formKey} className="space-y-6">
               {/* Lab Info Section */}
               <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">Lab Details</h2>
