@@ -1,25 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp, User, RotateCcw } from 'lucide-react';
+import { BookOpen, Sparkles, AlertCircle, Plus, Link as LinkIcon, Sun, Moon, CircleHelp, User, RotateCcw, UserPlus } from 'lucide-react';
 import { Button } from './components/Button';
 import { ResultViewer } from './components/ResultViewer';
 import { ProblemForm } from './components/ProblemForm';
 import { HelpModal } from './components/HelpModal';
+import { SignupModal } from './components/SignupModal';
+import { EmailVerificationModal } from './components/EmailVerificationModal';
 import { processLabReport } from './services/geminiService';
 import { LabData, GenerationState, Problem } from './types';
 
+const INITIAL_LAB_INFO = {
+  studentId: '',
+  labNumber: '',
+  labTitle: '',
+  codeforcesLink: ''
+};
+
 const App: React.FC = () => {
-  const [labInfo, setLabInfo] = useState({
-    studentId: '',
-    labNumber: '',
-    labTitle: '',
-    codeforcesLink: ''
-  });
+  const [labInfo, setLabInfo] = useState(INITIAL_LAB_INFO);
 
   const [problems, setProblems] = useState<Problem[]>([
-    { id: '1', title: '', description: '', code: '' }
+    { id: 'init-1', title: '', description: '', code: '' }
   ]);
 
-  const [expandedProblemId, setExpandedProblemId] = useState<string | null>('1');
+  const [expandedProblemId, setExpandedProblemId] = useState<string | null>('init-1');
 
   const [generation, setGeneration] = useState<GenerationState>({
     status: 'idle',
@@ -27,8 +31,7 @@ const App: React.FC = () => {
     error: null
   });
 
-  // Used to force a complete re-render of the input section on reset
-  const [formKey, setFormKey] = useState(0);
+  const [resetKey, setResetKey] = useState(0);
 
   const [isDark, setIsDark] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -39,6 +42,11 @@ const App: React.FC = () => {
   });
 
   const [showHelp, setShowHelp] = useState(false);
+  const [showSignup, setShowSignup] = useState(false);
+  
+  // Verification State
+  const [verificationToken, setVerificationToken] = useState<string | null>(null);
+
   const sidebarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -57,6 +65,15 @@ const App: React.FC = () => {
       document.documentElement.classList.remove('dark');
       localStorage.setItem('theme', 'light');
     }
+
+    // Check URL for verification token
+    const searchParams = new URLSearchParams(window.location.search);
+    const token = searchParams.get('token');
+    if (token) {
+      setVerificationToken(token);
+      // Clean up URL without reloading
+      window.history.replaceState({}, '', window.location.pathname);
+    }
   }, [isDark]);
 
   const toggleTheme = () => setIsDark(!isDark);
@@ -73,7 +90,7 @@ const App: React.FC = () => {
   };
 
   const addProblem = () => {
-    const newId = String(Date.now());
+    const newId = `prob-${Date.now()}`;
     setProblems(prev => [...prev, { id: newId, title: '', description: '', code: '' }]);
     setExpandedProblemId(newId);
   };
@@ -89,41 +106,29 @@ const App: React.FC = () => {
     setExpandedProblemId(prev => prev === id ? null : id);
   };
 
-  const handleReset = (e?: React.MouseEvent) => {
-    if (e) e.preventDefault();
-    if (window.confirm("Are you sure you want to reset all details? This will clear all your inputs and generated report.")) {
-      // Reset Lab Info
-      setLabInfo({
-        studentId: '',
-        labNumber: '',
-        labTitle: '',
-        codeforcesLink: ''
-      });
+  const handleReset = () => {
+    if (window.confirm("Are you sure you want to reset all details? This will clear all your inputs and the generated report.")) {
+      setLabInfo(INITIAL_LAB_INFO);
       
-      // Reset Problems
-      const newId = String(Date.now());
-      setProblems([{ id: newId, title: '', description: '', code: '' }]);
-      setExpandedProblemId(newId);
+      const newProblemId = `reset-${Date.now()}`;
+      setProblems([{ id: newProblemId, title: '', description: '', code: '' }]);
+      setExpandedProblemId(newProblemId);
       
-      // Reset Generation Status
       setGeneration({
         status: 'idle',
         result: null,
         error: null
       });
 
-      // Increment formKey to force DOM reconstruction of inputs
-      setFormKey(prev => prev + 1);
+      setResetKey(prev => prev + 1);
 
-      // Scroll sidebar to top
       if (sidebarRef.current) {
-        sidebarRef.current.scrollTop = 0;
+        sidebarRef.current.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   };
 
   const handleGenerate = async () => {
-    // Basic Validation
     if (!labInfo.labNumber.trim() || !labInfo.labTitle.trim()) {
        setGeneration({ status: 'error', result: null, error: 'Please enter Lab Number and Title.' });
        return;
@@ -155,6 +160,13 @@ const App: React.FC = () => {
   return (
     <div className="h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans flex flex-col overflow-hidden transition-colors duration-200">
       <HelpModal isOpen={showHelp} onClose={() => setShowHelp(false)} />
+      <SignupModal isOpen={showSignup} onClose={() => setShowSignup(false)} />
+      {verificationToken && (
+        <EmailVerificationModal 
+          token={verificationToken} 
+          onClose={() => setVerificationToken(null)} 
+        />
+      )}
 
       {/* Header */}
       <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 z-20 transition-colors">
@@ -165,17 +177,17 @@ const App: React.FC = () => {
             </div>
             <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight">Report Generator</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
              <button 
                onClick={handleReset}
-               className="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors"
+               className="p-2 text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors hidden sm:block"
                title="Reset Details"
              >
                <RotateCcw size={20} />
              </button>
              <button 
                onClick={() => setShowHelp(true)}
-               className="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors"
+               className="p-2 text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition-colors hidden sm:block"
                title="Show Instructions"
              >
                <CircleHelp size={20} />
@@ -187,16 +199,25 @@ const App: React.FC = () => {
              >
                {isDark ? <Sun size={20} /> : <Moon size={20} />}
              </button>
-             <div className="hidden sm:block text-xs text-slate-500 dark:text-slate-400 border dark:border-slate-700 px-2 py-1 rounded bg-slate-50 dark:bg-slate-800">
-               Gemini 3 Flash
-             </div>
+
+             <div className="h-6 w-px bg-slate-200 dark:bg-slate-700 mx-1 hidden sm:block"></div>
+
+             <Button 
+                onClick={() => setShowSignup(true)}
+                variant="secondary"
+                className="!py-1.5 !px-3 text-sm"
+              >
+                <UserPlus size={16} />
+                <span className="hidden sm:inline">Sign Up</span>
+              </Button>
+
              <Button 
                 onClick={handleGenerate} 
                 isLoading={generation.status === 'generating'}
                 className="!py-1.5 !px-4 text-sm"
               >
                 <Sparkles size={16} />
-                Generate Report
+                <span className="hidden sm:inline">Generate</span>
               </Button>
           </div>
         </div>
@@ -211,7 +232,8 @@ const App: React.FC = () => {
             ref={sidebarRef}
             className="flex-1 overflow-y-auto custom-scrollbar p-6"
           >
-            <div key={formKey} className="space-y-6">
+            {/* The resetKey prop ensures that this entire tree is re-created on reset */}
+            <div key={resetKey} className="space-y-6">
               {/* Lab Info Section */}
               <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
                 <h2 className="text-sm font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider mb-2">Lab Details</h2>
@@ -229,6 +251,7 @@ const App: React.FC = () => {
                         value={labInfo.studentId}
                         onChange={handleInfoChange}
                         placeholder="e.g. 21301548"
+                        autoComplete="off"
                         className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                       />
                     </div>
@@ -242,6 +265,7 @@ const App: React.FC = () => {
                       value={labInfo.labNumber}
                       onChange={handleInfoChange}
                       placeholder="e.g. 4"
+                      autoComplete="off"
                       className="w-full px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                     />
                   </div>
@@ -252,6 +276,7 @@ const App: React.FC = () => {
                       value={labInfo.labTitle}
                       onChange={handleInfoChange}
                       placeholder="e.g. Arrays"
+                      autoComplete="off"
                       className="w-full px-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                     />
                   </div>
@@ -269,6 +294,7 @@ const App: React.FC = () => {
                         value={labInfo.codeforcesLink}
                         onChange={handleInfoChange}
                         placeholder="https://codeforces.com/..."
+                        autoComplete="off"
                         className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all"
                       />
                     </div>
